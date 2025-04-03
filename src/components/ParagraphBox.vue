@@ -1,11 +1,13 @@
 <template>
-    <v-btn color="primary">Vuetify 按钮</v-btn>
-    
     <v-card>
         <v-card-text>
             <div class="operation-section">
                 <v-container>
-                    <v-row>
+                    <v-row
+                    align="end"
+                    style="height: 150px;"
+                    no-gutters
+                    >
                         <v-col v-for="(word, index) in words" :key="index" cols="2">
                             <WordCard :word="word" />
                         </v-col>
@@ -28,14 +30,46 @@ export default {
     components: {
         WordCard
     },
+    props: {
+        analysisResult: {
+            type: String,
+            default: ''
+        },
+    },
     data() {
         return {
-            words: ['This', 'is', 'a', 'sample', 'sentence','with','some','words','in','it']
+            words: []
         }
     },
     computed: {
         processedSentence() {
-            return this.words.map(word => `<span>${word}</span>`).join(' ')
+            return this.words.map((word, index) => 
+                `<span class="word-${index}">${word.text}</span>`
+            ).join(' ') || ''
+        },
+        sectionHeight() {
+            const rows = Math.ceil(this.words.length / 6); // 每行6个卡片
+            return `calc(${rows} * (var(--word-card-height) + var(--row-gap)))`;
+        }
+    },
+    watch: {
+        analysisResult: {
+            immediate: true,
+            handler(newVal) {
+                try {
+                    const jsonString = newVal
+                        .replace(/```json\n/, '')
+                        .replace(/\n```/, '')
+                        .replace(/\\n/g, '')
+                        .replace(/\\"/g, '"');
+                    
+                    const result = JSON.parse(jsonString);
+                    this.words = result.output || [];
+                } catch (error) {
+                    console.error('解析出错:', error);
+                    this.words = [];
+                }
+            }
         }
     }
 }
@@ -47,10 +81,11 @@ export default {
     padding: 20px;
     margin: 20px;
   }
+
   .operation-section {
-    min-height: var(--section-height);
+    min-height: v-bind(sectionHeight); /* 使用计算属性动态设置高度 */
     min-width: var(--section-width);
-  }
+    }
 
   .display_part p {
     min-width: var(--section-width);

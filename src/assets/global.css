@@ -1,4 +1,7 @@
 :root {
   --section-width: 600px;
   --section-height: 300px;
+  --word-card-height: 100px; /* 定义每张卡片的高度 */
+  --row-gap: 100px; /* 定义行间距 */
 }
+
