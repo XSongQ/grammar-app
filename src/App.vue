@@ -72,118 +72,66 @@ const analyzeSentence = async () => {
   4. 字符串值保持最小转义，内容字段直接包含有效JSON结构
 
   {
-  "instruction": "分析英语句子，按顺序输出每个成分的语法角色。严格遵循以下规则：",
+  "instruction": "分析英语句子，输出语法成分及理解顺序队列。严格遵循：",
   "output_format": {
-    "fields": [
-      {"text": "单词/短语/标点"},
+    "components": [
       {
-        "grammar_role": ["主语", "谓语", "宾语", "定语", "状语", "补语", "插入语", "连接1", "连接2", "连接3", "空"],
-        "rules": {
-          "连接1": "连接独立分句（如 and/but/or 连接主句）",
-          "连接2": "引导从句或分割意群（如 when/that/逗号/分号）",
-          "连接3": "连接句子内成分（如 and 连接并列名词）"
-        }
-      },
-      {"clause": "主句1 / 从句1-1 / 从句1-2..."},
-      {
-        "info": {
-          "规则": "根据成分的词性填充对应字段，其他字段留空",
-          "名词": {"数": "单/复", "格": "主/宾/所有", "解释": "词义"},
-          "动词": {"时态": "现在/过去/...", "语态": "主动/被动"},
-          "定语/状语": {"修饰对象": "被修饰词", "用法": "to do/doing/介词短语..."},
-          "连接词": {"功能": "并列/从属/插入..."}
-        }
-      }
-    ]
-  },
-  "example": {
-    "input": "If you study hard, you will pass the exam and get a reward.",
-    "output": [
-      {
-        "text": "If",
-        "grammar_role": "连接2",
-        "clause": "从句1-1",
-        "info": {"功能": "引导条件状语从句"}
-      },
-      {
-        "text": "you",
-        "grammar_role": "主语",
-        "clause": "从句1-1",
-        "info": {"数": "单/复", "格": "主", "解释": "你"}
-      },
-      {
-        "text": "study",
-        "grammar_role": "谓语",
-        "clause": "从句1-1",
-        "info": {"时态": "现在", "语态": "主动"}
-      },
-      {
-        "text": "hard",
-        "grammar_role": "状语",
-        "clause": "从句1-1",
-        "info": {"修饰对象": "study", "用法": "副词"}
-      },
-      {
-        "text": ",",
-        "grammar_role": "连接2",
-        "clause": "边界",
-        "info": {"功能": "分隔主从句"}
-      },
-      {
-        "text": "you",
-        "grammar_role": "主语",
-        "clause": "主句1",
-        "info": {"数": "单/复", "格": "主", "解释": "你"}
-      },
-      {
-        "text": "will pass",
-        "grammar_role": "谓语",
-        "clause": "主句1",
-        "info": {"时态": "将来", "语态": "主动"}
-      },
-      {
-        "text": "the",
-        "grammar_role": "定语",
-        "clause": "主句1",
-        "info": {"修饰对象": "exam", "用法": "冠词"}
-      },
-      {
-        "text": "exam",
-        "grammar_role": "宾语",
-        "clause": "主句1",
-        "info": {"数": "单", "格": "宾", "解释": "考试"}
-      },
-      {
-        "text": "and",
-        "grammar_role": "连接3",
-        "clause": "主句1",
-        "info": {"功能": "并列谓语"}
-      },
-      {
-        "text": "get",
-        "grammar_role": "谓语",
-        "clause": "主句1",
-        "info": {"时态": "将来", "语态": "主动"}
-      },
-      {
-        "text": "a",
-        "grammar_role": "定语",
-        "clause": "主句1",
-        "info": {"修饰对象": "reward", "用法": "冠词"}
-      },
-      {
-        "text": "reward",
-        "grammar_role": "宾语",
-        "clause": "主句1",
-        "info": {"数": "单", "格": "宾", "解释": "奖励"}
-      },
-      {
-        "text": ".",
-        "grammar_role": "空",
-        "clause": "边界",
+        "text": "单词/短语/标点",
+        "position": "在原句中的序号（从0开始）",
+        "grammar_role": ["主语", "谓语", "宾语", "定语", "状语", "补语", "插入语", "连接词", "标点"],
+        "clause": "主句1/从句1-1/边界...",
         "info": {}
       }
+    ],
+    "sequence_queue": [
+      ["边界成分的position"],
+      ["主句1成分position顺序"],
+      ["从句1-1成分position顺序"]
     ]
+  },
+  "rules": {
+    "定位系统": {
+      "position规则": "每个单词/短语分配唯一position，短语取首词序号",
+      "示例": "『the exam』取'the'的position"
+    },
+    "连接处理": {
+      "连接词": "并列连词（and/but/or）、从属连词（if/when）",
+      "标点": ", ; . ? ! 等标点符号",
+      "边界层": "连接词和标点按原序放在sequence_queue[0]"
+    },
+    "顺序逻辑": {
+      "第一层": "边界层position按出现顺序排列",
+      "后续层": "主句按SVO顺序→从句按出现顺序"
+    }
+  },
+  "example": {
+    "input": "If you you study, Tom smiles and Bob laughs.",
+    "output": {
+      "components": [
+        {"text": "If", "position": 0, "grammar_role": "连接词", "clause": "边界"},
+        {"text": "you", "position": 1, "grammar_role": "主语", "clause": "从句1-1"},
+        {"text": "you", "position": 2, "grammar_role": "主语", "clause": "从句1-1"}, 
+        {"text": "study", "position": 3, "grammar_role": "谓语", "clause": "从句1-1"},
+        {"text": ",", "position": 4, "grammar_role": "标点", "clause": "边界"},
+        {"text": "Tom", "position": 5, "grammar_role": "主语", "clause": "主句1"},
+        {"text": "smiles", "position": 6, "grammar_role": "谓语", "clause": "主句1"},
+        {"text": "and", "position": 7, "grammar_role": "连接词", "clause": "边界"},
+        {"text": "Bob", "position": 8, "grammar_role": "主语", "clause": "主句2"},
+        {"text": "laughs", "position": 9, "grammar_role": "谓语", "clause": "主句2"},
+        {"text": ".", "position": 10, "grammar_role": "标点", "clause": "边界"}
+      ],
+      "sequence_queue": [
+        [0,4,7,10],  // 边界层：If(0) ,(4) and(7) .(10)
+        [5,6],       // 主句1：Tom(5) smiles(6)
+        [8,9],       // 主句2：Bob(8) laughs(9)
+        [1,2,3]      // 从句1-1：you(1) you(2) study(3)
+      ]
+    }
+  },
+  "validation_rules": {
+    "唯一性校验": "所有position值必须唯一且连续",
+    "完整性校验": "原句所有token必须有对应component",
+    "队列映射": "sequence_queue中的所有position必须存在于components"
   }
 }
   `
