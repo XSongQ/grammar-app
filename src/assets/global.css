@@ -5,3 +5,8 @@
   --row-gap: 100px; /* 定义行间距 */
 }
 
+/* 添加主题避免组件默认hover黑色 */
+.v-theme--light{
+  --v-hover-opacity: 0.04;
+  --v-theme-overlay-multiplier: 1;
+}

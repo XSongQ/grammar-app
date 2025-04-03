@@ -57,13 +57,13 @@ export default {
             immediate: true,
             handler(newVal) {
                 try {
-                    const jsonString = newVal
-                        .replace(/```json\n/, '')
-                        .replace(/\n```/, '')
-                        .replace(/\\n/g, '')
-                        .replace(/\\"/g, '"');
+                    // const jsonString = newVal
+                        // .replace(/```json\n/, '')
+                        // .replace(/\n```/, '')
+                        // .replace(/\\n/g, '')
+                        // .replace(/\\"/g, '"');
                     
-                    const result = JSON.parse(jsonString);
+                    const result = JSON.parse(newVal);
                     this.words = result.output || [];
                 } catch (error) {
                     console.error('解析出错:', error);

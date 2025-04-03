@@ -1,8 +1,8 @@
 <template>
   <v-card 
     class="word-card"
-    :class="{ 'is-flipped': isFlipped }"
-    @click="toggleFlip"
+    :class="{ 'is-flipped': isFlipped, 'error-state': showError }"
+    @click="handleClick"
   >
     <div class="card-inner">
       <div class="card-front">
@@ -25,16 +25,31 @@
 export default {
   props: {
     word: {
-      type: Object,  // 修改为Object类型
+      type: Object,
+      required: true
+    },
+    status: {
+      type: Boolean,
       required: true
     }
   },
   data() {
     return {
-      isFlipped: false
+      isFlipped: false,
+      showError: false
     }
   },
   methods: {
+    handleClick() {
+      if (!this.status) {
+        this.showError = true;
+        setTimeout(() => {
+          this.showError = false;
+        }, 500); // 动画持续时间
+        return;
+      }
+      this.toggleFlip();
+    },
     toggleFlip() {
       this.isFlipped = !this.isFlipped;
     }
@@ -53,9 +68,8 @@ export default {
   cursor: pointer;
   transition: all 0.3s ease;
   perspective: 1000px;
-
   min-width: 50px;
-  min-height: var(--word-card-height); /* 使用全局定义的卡片高度 */
+  min-height: var(--word-card-height);
 }
 
 
@@ -83,11 +97,6 @@ export default {
   transform: rotateY(180deg);
 }
 
-.word-card:hover {
-  animation: shake 0.5s;
-  transform: scale(1.05);
-  box-shadow: 0 3px 5px rgba(0,0,0,0.2);
-}
 
 @keyframes shake {
   0% { transform: translate(1px, 1px) rotate(0deg); }
@@ -107,5 +116,10 @@ export default {
   padding: 12px;
   overflow: visible;
   white-space: normal;
+}
+
+.error-state {
+  background-color: #ffebee !important;
+  animation: shake 0.5s;
 }
 </style>

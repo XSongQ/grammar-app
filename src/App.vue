@@ -65,6 +65,12 @@ const analyzeSentence = async () => {
   }
 
   let system_prompt = `
+  你是一个严谨的JSON输出机器人，所有响应必须严格符合以下要求：
+  1. 直接输出纯净JSON对象，不包含任何额外符号或解释
+  2. 不使用\`\`\`json或\`\`\`代码块格式
+  3. 确保JSON结构始终以{开始，以}结束
+  4. 字符串值保持最小转义，内容字段直接包含有效JSON结构
+
   {
   "instruction": "分析英语句子，按顺序输出每个成分的语法角色。严格遵循以下规则：",
   "output_format": {
@@ -180,8 +186,6 @@ const analyzeSentence = async () => {
     ]
   }
 }
-  注意：直接输出JSON格式，不包含任何额外信息。
-  去掉开头的\`\`\`json\\n和结尾的\`\`\`，只输出JSON内容。
   `
 
   try {
