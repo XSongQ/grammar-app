@@ -1,7 +1,7 @@
 <template>
   <v-app>
-    <v-main>
-      <v-dialog v-model="dialog" width="500">
+    <v-main style="max-width: 1200px; min-width: 100vh; margin: 0 auto;">  <!-- [! ++ 添加最大宽度和居中 ++] -->
+      <v-dialog v-model="dialog" width="500px">
         <template v-slot:activator="{ props }">
           <v-btn color="primary" v-bind="props" class="ma-4">
             分析句子
@@ -22,8 +22,9 @@
         </v-card>
       </v-dialog>
 
+      <!-- 以下为测试，正式：:analysisResult="apiResponse" -->
       <ParagraphBox 
-        :analysisResult="apiResponse"
+        :analysisResult="testMessage"
       />
       
       <v-alert v-if="error" type="error" class="ma-4">{{ error }}</v-alert>
@@ -35,6 +36,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import ParagraphBox from './components/ParagraphBox.vue'
+
+import { testMessage } from './unitTest.js'
 
 const dialog = ref(false)
 const userInput = ref('')
@@ -72,7 +75,7 @@ const analyzeSentence = async () => {
   4. 字符串值保持最小转义，内容字段直接包含有效JSON结构
 
   {
-  "instruction": "分析英语句子，输出语法成分及理解顺序队列。严格遵循：",
+  "instruction": "分析英语句子，以符合洗手学习者理解的方式，输出语法成分及理解顺序队列。遵循：",
   "output_format": {
     "components": [
       {
@@ -104,30 +107,6 @@ const analyzeSentence = async () => {
       "后续层": "主句按SVO顺序→从句按出现顺序"
     }
   },
-  "example": {
-    "input": "If you you study, Tom smiles and Bob laughs.",
-    "output": {
-      "components": [
-        {"text": "If", "position": 0, "grammar_role": "连接词", "clause": "边界"},
-        {"text": "you", "position": 1, "grammar_role": "主语", "clause": "从句1-1"},
-        {"text": "you", "position": 2, "grammar_role": "主语", "clause": "从句1-1"}, 
-        {"text": "study", "position": 3, "grammar_role": "谓语", "clause": "从句1-1"},
-        {"text": ",", "position": 4, "grammar_role": "标点", "clause": "边界"},
-        {"text": "Tom", "position": 5, "grammar_role": "主语", "clause": "主句1"},
-        {"text": "smiles", "position": 6, "grammar_role": "谓语", "clause": "主句1"},
-        {"text": "and", "position": 7, "grammar_role": "连接词", "clause": "边界"},
-        {"text": "Bob", "position": 8, "grammar_role": "主语", "clause": "主句2"},
-        {"text": "laughs", "position": 9, "grammar_role": "谓语", "clause": "主句2"},
-        {"text": ".", "position": 10, "grammar_role": "标点", "clause": "边界"}
-      ],
-      "sequence_queue": [
-        [0,4,7,10],  // 边界层：If(0) ,(4) and(7) .(10)
-        [5,6],       // 主句1：Tom(5) smiles(6)
-        [8,9],       // 主句2：Bob(8) laughs(9)
-        [1,2,3]      // 从句1-1：you(1) you(2) study(3)
-      ]
-    }
-  },
   "validation_rules": {
     "唯一性校验": "所有position值必须唯一且连续",
     "完整性校验": "原句所有token必须有对应component",
@@ -145,7 +124,7 @@ const analyzeSentence = async () => {
         "Authorization": `Bearer ${apiKey.value}` 
       },
       body: JSON.stringify({
-        model: "deepseek-chat",
+        model: 'deepseek-chat',
         messages: [
           { 
             role: "system", 
@@ -171,4 +150,5 @@ const analyzeSentence = async () => {
 </script>
 
 <style scoped>
+
 </style>

@@ -5,9 +5,17 @@
         <v-card class="content-card" flat>
             <v-card-text>
                 <div class="display_part">
-                    <p class="english-paragraph" v-html="processedSentence"></p>
+                    <p class="english-paragraph">
+                        <WordSpan 
+                            v-for="(word, index) in words" 
+                            :key="index"
+                            :class="word.position"
+                            :word="word"
+                            :status="false"
+                        />
+                    </p>
                     <p class="chinese-paragraph"></p>  <!-- [! ++ 添加class ++] -->
-                    <hr style="margin-top: 20px;"/>
+                    <hr v-show="words.length" style="margin-top: 20px;"/>
                 </div>
 
                 <div class="operation-section">
@@ -16,8 +24,7 @@
                             <v-col 
                                 v-for="(word, index) in words" 
                                 :key="index" 
-                                cols="1"
-        
+                                cols="2"  
                             >
                                 <WordCard :class="word.position" :word="word" :status="false" />
                             </v-col>
@@ -32,10 +39,18 @@
 <style scoped>
 /* 外层卡片样式 */
 .background-card {
+   
     background-color: #D9ECFF;
     padding: 20px;
     margin: 20px;
-    /* [! -- 移除min-height: 700px; --] */
+}
+
+/* 调整WordCard容器样式 */
+.operation-section {
+    padding: 15px 0;
+    max-width: 1200px; 
+    min-width: 100vh;
+    margin: 0 auto;    
 }
 
 /* 内层卡片样式 */
@@ -67,10 +82,15 @@
 
 <script>
 import WordCard from './WordCard.vue'
+import WordSpan from './WordSpan.vue'
 
 export default {
     components: {
-        WordCard
+        WordCard,
+        WordSpan,  // [!code ++]
+    },
+    computed: {
+        // 移除processedSentence计算属性 [!code --]
     },
     props: {
         analysisResult: {
@@ -110,6 +130,7 @@ export default {
                             splitIndex      // 记录拆分索引
                         }));
                     });
+                    console.log('Received sequence:', result.sequence_queue);
                     console.log('处理后的单词数组:', this.words)
                 } catch (error) {
                     console.error('解析出错:', error);

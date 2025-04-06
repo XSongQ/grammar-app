@@ -69,7 +69,7 @@ export default {
   transition: all 0.3s ease;
   perspective: 1000px;
   min-width: 50px;
-  height: 50px;
+  height: 100px;
 }
 
 
