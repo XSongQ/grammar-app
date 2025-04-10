@@ -106,30 +106,31 @@ const primaryAnalysis = async () => {
     userInput.value = '' // 清空输入框
 
     // 处理收到的数据
-    secondaryAnalysis(primaryResponse)
-
-  } catch (err) {
-    error.value = '请求失败: ' + err.message
-  } finally {
-    loading.value = false
-  }
-}
-
-function secondaryAnalysis(primaryResponse) {
-  try {
     const sentences = JSON.parse(primaryResponse);
     console.log(sentences)
 
     // 遍历数组并存入 sessionStorage
+    sessionStorage.clear()  // 清除之前的记录
     sentences.forEach((sentence, index) => {
       const key = `sentence${index + 1}`; // 生成键名：sentence1, sentence2...
       sessionStorage.setItem(key, sentence);
     });
 
     console.log("数据成功存入sessionStorage！");
-  } catch (error) {
-    console.error("JSON处理错误：", error.message);
+    requestSecondaryAnalysis()
+
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    // 在第一个处理好之后？
+    loading.value = false
   }
+}
+
+
+// 异步请求分句
+function requestSecondaryAnalysis() {
+
 }
 
 

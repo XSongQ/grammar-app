@@ -20,7 +20,11 @@
                             </span>
                         </template>
                     </p>
-                    <p class="chinese"></p>
+                    <transition name="fade">
+                        <p class="chinese" v-if="curSentenceNum > totalSentenceNum">
+                            {{ translation }}
+                        </p>
+                    </transition>
                     <hr v-show="words.length" style="margin-top: 20px;"/>
                 </div>
 
@@ -80,10 +84,13 @@ export default {
         return {
             words: [],  // WordCard
             parts: [],  // WordSpan
+            translation: "",
+
             curSentenceNum: 1,
+            totalSentenceNum: 0,
+
             isCardNotFlipped: [],
             kernel_count: [],
-            clause_role_signals: [],
 
             turn_card_processed: false
         }
@@ -154,8 +161,8 @@ export default {
                 })
             }
             traverse(result)
-            console.log(this.parts)
-            console.log(this.isCardNotFlipped)
+            this.translation = result.translation
+            this.totalSentenceNum = sentenceSeq
 
         } catch(error) {
             console.error('解析出错：', error)
@@ -180,7 +187,7 @@ export default {
                 }      
             } 
 
-            console.log(this.curSentenceNum, part_id, this.parts[part_id])
+            console.log(this.isCardNotFlipped, this.curSentenceNum, this.totalSentenceNum)
         }
     },
 
@@ -225,6 +232,16 @@ export default {
     padding: 0 !important;  /* 移除内层卡片的默认padding */
 }
 
+/* 新增动画效果 */
+.fade-enter-active {
+    transition: opacity 1.5s ease;
+}
+.fade-enter-from {
+    opacity: 0;
+}
+.fade-enter-to {
+    opacity: 1;
+}
 
 /* 保持原有其他样式不变 */
 .clause-role {
@@ -232,5 +249,4 @@ export default {
     font-weight: bold;
     margin: 0 2px;
 }
-
 </style>
