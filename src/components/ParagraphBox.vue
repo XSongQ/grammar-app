@@ -80,6 +80,7 @@
 /* 保持原有其他样式不变 */
 </style>
 
+
 <script>
 import WordCard from './WordCard.vue'
 import WordSpan from './WordSpan.vue'
@@ -92,20 +93,15 @@ export default {
     computed: {
         // 移除processedSentence计算属性 [!code --]
     },
-    props: {
-        analysisResult: {
-            type: String,
-            default: ''
-        },
-    },
     data() {
         return {
-            components: [],  // [! -- 这个属性未被使用 --]
-            words: []        // [! ++ 新增响应式数据 ++]
+            words: ['This', 'is', 'a', 'sample', 'sentence','with','some','words','in','it']
         }
     },
     computed: {
         processedSentence() {
+
+
             return this.words
                 .map((word, index) => 
                     `<span class="word-${index}">${word.text}</span>`
@@ -137,8 +133,29 @@ export default {
                     this.words = [];  // [! ++ 保持数据一致性 ++]
                 }
             }
+
         }
     }
 }
 </script>
 
+<style scoped>
+  .v-card {
+    background-color: #D9ECFF;
+    padding: 20px;
+    margin: 20px;
+  }
+  .operation-section {
+    min-height: var(--section-height);
+    min-width: var(--section-width);
+  }
+
+  .display_part p {
+    min-width: var(--section-width);
+    background-color: white;
+    border: 1px solid #ccc;
+    padding: 10px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+</style>

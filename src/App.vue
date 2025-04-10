@@ -4,7 +4,7 @@
       <v-dialog v-model="dialog" width="500px">
         <template v-slot:activator="{ props }">
           <v-btn color="primary" v-bind="props" class="ma-4">
-            分析句子
+            分析段落
           </v-btn>
         </template>
 
@@ -12,20 +12,19 @@
           <v-card-text>
             <v-textarea
               v-model="userInput"
-              label="请输入英文句子"
+              label="请输入英文句子或段落"
               outlined
             ></v-textarea>
           </v-card-text>
           <v-card-actions>
-            <v-btn color="primary" @click="analyzeSentence">提交</v-btn>
+            <v-btn color="primary" @click="primaryAnalysis">提交</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
 
-      <!-- 以下为测试，正式：:analysisResult="apiResponse" -->
-      <ParagraphBox 
-        :analysisResult="testMessage"
-      />
+      <!-- <ParagraphBox 
+        :analysisResult="apiResponse"
+      /> -->
       
       <v-alert v-if="error" type="error" class="ma-4">{{ error }}</v-alert>
       <v-progress-linear v-if="loading" indeterminate></v-progress-linear>
@@ -37,11 +36,10 @@
 import { ref, onMounted } from 'vue'
 import ParagraphBox from './components/ParagraphBox.vue'
 
-import { testMessage } from './unitTest.js'
 
 const dialog = ref(false)
 const userInput = ref('')
-const apiResponse = ref(null)
+// const apiResponse = ref(null)
 const loading = ref(false)
 const error = ref(null)
 const apiKey = ref('')
@@ -61,59 +59,27 @@ onMounted(() => {
 })
 
 
-const analyzeSentence = async () => {
+const primaryAnalysis = async () => {
   if (!apiKey.value) {
     error.value = '请先输入API Key'
     return
   }
 
-  let system_prompt = `
+  let prompt = `
   你是一个严谨的JSON输出机器人，所有响应必须严格符合以下要求：
   1. 直接输出纯净JSON对象，不包含任何额外符号或解释
   2. 不使用\`\`\`json或\`\`\`代码块格式
-  3. 确保JSON结构始终以{开始，以}结束
+  3. 确保JSON结构始终以[开始，以]结束
   4. 字符串值保持最小转义，内容字段直接包含有效JSON结构
 
-  {
-  "instruction": "分析英语句子，以符合洗手学习者理解的方式，输出语法成分及理解顺序队列。遵循：",
-  "output_format": {
-    "components": [
-      {
-        "text": "单词/短语/标点",
-        "position": "在原句中的序号（从0开始）",
-        "grammar_role": ["主语", "谓语", "宾语", "定语", "状语", "补语", "插入语", "连接词", "标点"],
-        "clause": "主句1/从句1-1/边界...",
-        "info": {}
-      }
-    ],
-    "sequence_queue": [
-      ["边界成分的position"],
-      ["主句1成分position顺序"],
-      ["从句1-1成分position顺序"]
-    ]
-  },
-  "rules": {
-    "定位系统": {
-      "position规则": "每个单词/短语分配唯一position，短语取首词序号",
-      "示例": "『the exam』取'the'的position"
-    },
-    "连接处理": {
-      "连接词": "并列连词（and/but/or）、从属连词（if/when）",
-      "标点": ", ; . ? ! 等标点符号",
-      "边界层": "连接词和标点按原序放在sequence_queue[0]"
-    },
-    "顺序逻辑": {
-      "第一层": "边界层position按出现顺序排列",
-      "后续层": "主句按SVO顺序→从句按出现顺序"
-    }
-  },
-  "validation_rules": {
-    "唯一性校验": "所有position值必须唯一且连续",
-    "完整性校验": "原句所有token必须有对应component",
-    "队列映射": "sequence_queue中的所有position必须存在于components"
-  }
-}
-  `
+  下面我将输出一个英文段落或文章，根据英语的规则，将这个段落或文章按句划分并以如下JSON格式输出：
+[
+  "This is the first sentence",
+  "This is the second sentence.",
+  ...
+]
+  原英文段落：${userInput.value}
+`
 
   try {
     loading.value = true
@@ -126,11 +92,7 @@ const analyzeSentence = async () => {
       body: JSON.stringify({
         model: 'deepseek-chat',
         messages: [
-          { 
-            role: "system", 
-            content: system_prompt
-          },
-          { role: "user", content: userInput.value }
+          { role: "user", content: prompt }
         ],
         temperature: 0.3, // 添加temperature参数
         max_tokens: 2000 // 添加max_tokens参数
@@ -138,15 +100,39 @@ const analyzeSentence = async () => {
     });
 
     const data = await response.json();
-    apiResponse.value = data.choices[0].message.content
+    const primaryResponse = data.choices[0].message.content
+
     dialog.value = false
     userInput.value = '' // 清空输入框
+
+    // 处理收到的数据
+    secondaryAnalysis(primaryResponse)
+
   } catch (err) {
     error.value = '请求失败: ' + err.message
   } finally {
     loading.value = false
   }
 }
+
+function secondaryAnalysis(primaryResponse) {
+  try {
+    const sentences = JSON.parse(primaryResponse);
+    console.log(sentences)
+
+    // 遍历数组并存入 sessionStorage
+    sentences.forEach((sentence, index) => {
+      const key = `sentence${index + 1}`; // 生成键名：sentence1, sentence2...
+      sessionStorage.setItem(key, sentence);
+    });
+
+    console.log("数据成功存入sessionStorage！");
+  } catch (error) {
+    console.error("JSON处理错误：", error.message);
+  }
+}
+
+
 </script>
 
 <style scoped>
