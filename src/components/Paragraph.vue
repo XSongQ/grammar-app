@@ -6,14 +6,19 @@
             <v-card-text>
                 <div class="display-part">
                     <p class="english">
-                        <!-- WordSpan状态由WordCard决定，通过isCardNotFlipped数组 -->
-                        <WordSpan 
-                            v-for="(wordDetails, index) in parts"
-                            v-bind:key="index"
-                            v-bind:wordDetails="wordDetails"
-                            v-bind:needFlip="!Boolean(isCardNotFlipped[index]) || kernel_count[wordDetails.sentenceNum] === 0"
-                            ref="wordSpans"
-                        />
+                        <template v-for="(part, index) in parts" :key="index">
+                            <WordSpan 
+                                v-if="!part.isRoleMarker"
+                                v-bind:wordDetails="part"
+                                v-bind:needFlip="!Boolean(isCardNotFlipped[part.part_id]) || kernel_count[part.sentenceNum] === 0"
+                            />
+                            <span 
+                                v-else-if="curSentenceNum > part.sentenceNum"
+                                class="clause-role"
+                            >
+                                {{ part.symbol }}
+                            </span>
+                        </template>
                     </p>
                     <p class="chinese"></p>
                     <hr v-show="words.length" style="margin-top: 20px;"/>
@@ -46,6 +51,22 @@
 <script>
 import WordCard from './WordCard.vue'
 import WordSpan from './WordSpan.vue'
+
+// 在文件顶部添加工具函数
+function getRoleSymbol(grammar_role, position) {
+    if (grammar_role.includes('定')) {
+        return position === 'before' ? '(' : ')'
+    } else if (grammar_role.includes('状')) {
+        return position === 'before' ? '[' : ']'
+    } else if (grammar_role.includes('补')) {
+        return position === 'before' ? '<' : '>'
+    } else if (grammar_role.includes('插入语')) {
+        return '^'
+    } else if (grammar_role.includes('同位语')) {
+        return position === 'before' ? '{' : '}'
+    }
+    return ''
+}
 
 export default {
     props: {
@@ -88,25 +109,33 @@ export default {
                 let curSentenceSeq = sentenceSeq
                 element.components.forEach(e => {
                     if(e.hasOwnProperty('components')) {
-                        if(e.grammar_role) this.clause_role_signals.push({
-                            sentenceNum: curSentenceSeq,
-                            grammar_role: e.grammar_role,
-                            part_id: this.isCardNotFlipped.length,
-                            position: 'before'
-                        })
+                        if(e.grammar_role) {
+                            // 添加前括号到parts
+                            this.parts.push({
+                                isRoleMarker: true,
+                                symbol: getRoleSymbol(e.grammar_role, 'before'),
+                                sentenceNum: curSentenceSeq
+                            })
+                        }
 
                         traverse(e)
 
-                        if(e.grammar_role) this.clause_role_signals.push({
-                            sentenceNum: curSentenceSeq,
-                            grammar_role: e.grammar_role,
-                            part_id: this.isCardNotFlipped.length - 1,
-                            position: 'after'
-                        })
+                        if(e.grammar_role) {
+                            // 添加后括号到parts
+                            this.parts.push({
+                                isRoleMarker: true,
+                                symbol: getRoleSymbol(e.grammar_role, 'after'),
+                                sentenceNum: curSentenceSeq
+                            })
+                        }
                     }
                     else {
                         let constituent_num = 0
-                        this.parts.push({...e, sentenceNum: curSentenceSeq})
+                        this.parts.push({
+                            ...e, 
+                            sentenceNum: curSentenceSeq,
+                            part_id: this.isCardNotFlipped.length
+                        })
                         this.words.push(...e.text.split(' ').map(constituent => {
                             constituent_num++
                             return {
@@ -124,21 +153,23 @@ export default {
                     }
                 })
             }
-            
             traverse(result)
+            console.log(this.parts)
+            console.log(this.isCardNotFlipped)
+
         } catch(error) {
             console.error('解析出错：', error)
         }
     },
 
     methods: {
-        checkSentence(part_id) {
+        checkSentence(part_id, grammar_role) {
             // this.isCardNotFlipped[part_id] === 0 时WordSpan会自动更新status
             this.isCardNotFlipped[part_id]--
             // console.log(part_id, this.parts[part_id].text,this.isCardNotFlipped[part_id])
 
             // 判断一个部分是否全部点开
-            if(this.isCardNotFlipped[part_id] === 0 && /[主谓动宾表]/.test(this.parts[part_id].grammar_role)) {
+            if(this.isCardNotFlipped[part_id] === 0 && /[主谓动宾表]/.test(grammar_role)) {
                 // 判断本句话kernel部分是否完成
                 this.kernel_count[this.curSentenceNum]--
                 if(this.kernel_count[this.curSentenceNum] === 0) {
@@ -149,52 +180,10 @@ export default {
                 }      
             } 
 
-            console.log(part_id, this.parts[part_id], this.turn_card_processed)
+            console.log(this.curSentenceNum, part_id, this.parts[part_id])
         }
     },
 
-    watch: {
-        curSentenceNum(newVal) {
-            console.log(this.clause_role_signals)
-            this.clause_role_signals.forEach(signal => {
-                if (newVal > signal.sentenceNum) {
-                    const wordSpan = this.$refs.wordSpans[signal.part_id].$el
-                    const span = document.createElement('span')
-                    span.className = 'clause-role'
-
-                    if (signal.position === 'before') {
-                        if(signal.grammar_role.includes('定')){
-                            span.textContent = '('
-                        } else if(signal.grammar_role.includes('状')){
-                            span.textContent = '['
-                        } else if(signal.grammar_role.includes('补')){
-                            span.textContent = '<'
-                        } else if(signal.grammar_role.includes('插入语')){
-                            span.textContent = '^'
-                        } else if(signal.grammar_role.includes('同位语')){
-                            span.textContent = '{'
-                        }
-                        wordSpan.before(span)
-                    } else {
-                        if(signal.grammar_role.includes('定')){
-                            span.textContent = ')'
-                        } else if(signal.grammar_role.includes('状')){
-                            span.textContent = ']'
-                        } else if(signal.grammar_role.includes('补')){
-                            span.textContent = '>'
-                        } else if(signal.grammar_role.includes('插入语')){
-                            span.textContent = '^'
-                        } else if(signal.grammar_role.includes('同位语')){
-                            span.textContent = '}'
-                        }
-                        wordSpan.after(span)
-                    }
-
-                    signal.sentenceNum = Infinity   // 确保只执行一次
-                }
-            })
-        }
-    }
 }
 </script>
 
@@ -238,4 +227,10 @@ export default {
 
 
 /* 保持原有其他样式不变 */
+.clause-role {
+    color: #888;
+    font-weight: bold;
+    margin: 0 2px;
+}
+
 </style>

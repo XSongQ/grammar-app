@@ -78,7 +78,7 @@ export default {
 
           // isFlipped控制翻面动画
           this.isFlipped = true
-          this.$emit('check', this.wordDetails.part_id)
+          this.$emit('check', this.wordDetails.part_id, this.wordDetails.grammar_role)
         }
 
       }
@@ -119,10 +119,10 @@ export default {
   },
 
   // 调试信息，确保接收到的word对象被正确解析
-  mounted() {
-    console.log('Received word:', this.wordDetails.text, this.wordDetails.part_id)
-    console.log(this.wordDetails.sentenceNum)
-  }
+  // mounted() {
+  //   console.log('Received word:', this.wordDetails.text, this.wordDetails.part_id)
+  //   console.log(this.wordDetails.sentenceNum)
+  // }
 }
 </script>
 
@@ -134,7 +134,7 @@ export default {
   transition: all 0.3s ease;
   perspective: 1000px;
   min-width: 50px;
-  height: 100px;
+  height: 150px;
 }
 
 
