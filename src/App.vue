@@ -16,16 +16,56 @@
               outlined
             ></v-textarea>
           </v-card-text>
-          <v-card-actions>
+
+          <v-card-actions class="justify-space-between">
+            <v-btn @click="dialog = false">取消</v-btn>
             <v-btn color="primary" @click="primaryAnalysis">提交</v-btn>
           </v-card-actions>
         </v-card>
+        
       </v-dialog>
 
       <!-- <ParagraphBox 
         :analysisResult="apiResponse"
       /> -->
       
+      <div v-if="showParagraphs" class="mt-4">
+        <div style="position: relative; min-height: 300px;">
+          <!-- 
+            v-show vs keep-alive + v-if：
+            v-show 内存占用大，切换快，实现简单；
+            keep-alive + v-if 内存占用小，切换慢，可精准控制生命周期（activated / deactivated）
+          -->
+
+          <ParagraphBox 
+            v-for="(analysisResult, index) in secondaryResults"
+            :key="index"
+            :analysisResult="analysisResult"
+            v-show="currentIndex === index"
+          />
+        </div>
+        
+        <div class="switch-buttons">
+          <v-btn 
+            icon="mdi-chevron-left"
+            color="primary"
+            variant="flat"
+            @click="currentIndex = Math.max(0, currentIndex - 1)"
+            :disabled="currentIndex === 0"
+            class="rounded-pill"
+          ></v-btn>
+          
+          <v-btn 
+            icon="mdi-chevron-right"
+            color="primary"
+            variant="flat"
+            @click="currentIndex = Math.min(secondaryResults.length - 1, currentIndex + 1)"
+            :disabled="currentIndex === secondaryResults.length - 1"
+            class="rounded-pill"
+          ></v-btn>
+        </div>
+      </div>
+
       <v-alert v-if="error" type="error" class="ma-4">{{ error }}</v-alert>
       <v-progress-linear v-if="loading" indeterminate></v-progress-linear>
     </v-main>
@@ -34,7 +74,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import ParagraphBox from './components/ParagraphBox.vue'
+import ParagraphBox from './components/unitTest2.vue'
 
 
 const dialog = ref(false)
@@ -43,6 +83,11 @@ const userInput = ref('')
 const loading = ref(false)
 const error = ref(null)
 const apiKey = ref('')
+
+// 在原有响应式变量后添加
+const secondaryResults = ref([])
+const currentIndex = ref(0)
+const showParagraphs = ref(false)
 
 // 添加的代码：检查并提示输入API Key
 onMounted(() => {
@@ -65,6 +110,10 @@ const primaryAnalysis = async () => {
     return
   }
 
+  // 新增重置逻辑
+  secondaryResults.value = []
+  showParagraphs.value = false
+
   let prompt = `
   你是一个严谨的JSON输出机器人，所有响应必须严格符合以下要求：
   1. 直接输出纯净JSON对象，不包含任何额外符号或解释
@@ -82,7 +131,6 @@ const primaryAnalysis = async () => {
 `
 
   try {
-    loading.value = true
     const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -94,16 +142,18 @@ const primaryAnalysis = async () => {
         messages: [
           { role: "user", content: prompt }
         ],
-        temperature: 0.3, // 添加temperature参数
+        temperature: 0.6, // 添加temperature参数
         max_tokens: 2000 // 添加max_tokens参数
       })
     });
 
+    dialog.value = false
+    userInput.value = '' // 清空输入框
+    loading.value = true
+
     const data = await response.json();
     const primaryResponse = data.choices[0].message.content
 
-    dialog.value = false
-    userInput.value = '' // 清空输入框
 
     // 处理收到的数据
     const sentences = JSON.parse(primaryResponse);
@@ -121,21 +171,73 @@ const primaryAnalysis = async () => {
 
   } catch (err) {
     error.value = err.message
-  } finally {
-    // 在第一个处理好之后？
-    loading.value = false
-  }
+  } 
 }
 
 
 // 异步请求分句
-function requestSecondaryAnalysis() {
+// 修改空的 requestSecondaryAnalysis 函数
+async function requestSecondaryAnalysis() {
+  try {
+    error.value = null
+    
+    // 获取所有句子键并按顺序排序
+    const sentenceKeys = Object.keys(sessionStorage)
+      .filter(key => key.startsWith('sentence'))
+      .sort((a, b) => parseInt(a.replace('sentence', '')) - parseInt(b.replace('sentence', '')))
 
+    secondaryResults.value = [] // 清空之前的结果
+
+    for (const key of sentenceKeys) {
+      const sentence = sessionStorage.getItem(key)
+      const prompt = `请用中文详细分析以下英文句子的语法结构，按JSON格式返回：
+        {
+          "original": "原句",
+          "analysis": {
+            "tenses": "时态分析",
+            "clauses": "从句结构",
+            "components": "句子成分",
+            "key_points": "语法要点"
+          }
+        }
+        需要分析的句子：${sentence}`
+
+      const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey.value}`
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.6,
+          max_tokens: 2000
+        })
+      })
+
+      const data = await response.json()
+      const analysisResult = data.choices[0].message.content // 直接使用字符串测试，之后改为JSON.parse
+      
+      secondaryResults.value.push(analysisResult)  // [!code ++] 直接存储字符串
+      showParagraphs.value = true
+      loading.value = false
+    }
+
+  } catch (err) {
+    error.value = `详细分析失败: ${err.message}`
+  } finally {
+    loading.value = false
+  }
 }
-
-
 </script>
 
+
 <style scoped>
+
+.switch-buttons {
+  display: flex;
+  justify-content: space-around;
+}
 
 </style>
