@@ -39,7 +39,7 @@
         },
 
         created() {
-            if(this.wordDetails.grammar_role.includes('定')){
+            if(this.wordDetails.grammar_role.includes('定语')){
                 this.modifier_symbol.push('(', ')')
             } else if(this.wordDetails.grammar_role.includes('状')){
                 this.modifier_symbol.push('[', ']')

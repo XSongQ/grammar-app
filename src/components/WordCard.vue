@@ -36,9 +36,9 @@ export default {
       type: Number,
       required: true
     },
-    isKernelComplete: {
-      type: Boolean,
-      required: false,
+    kernelCount: {
+      type: Number,
+      required: true,
       default: false
     },
 
@@ -58,7 +58,7 @@ export default {
     handleClick() {
       if(!this.isFlipped) {
         if(this.curSentenceNum !== this.wordDetails.sentenceNum 
-        || !/[主谓动宾表连]/.test(this.wordDetails.grammar_role)) {
+        || this.kernelCount > 0 && !/[主谓动宾表连]/.test(this.wordDetails.grammar_role)) {
           this.showError = true
           setTimeout(() => {
             this.showError = false
@@ -74,6 +74,19 @@ export default {
             this.currentColor = 'var(--color-predicative)'
           } else if(this.wordDetails.grammar_role.includes('连')) {
             this.currentColor = 'var(--color-conjunction)'
+          } else if(this.wordDetails.grammar_role.includes('定')) {
+            this.currentColor = 'var(--color-attribute)'
+          } else if(this.wordDetails.grammar_role.includes('状')) {
+            this.currentColor = 'var(--color-adverbial)'
+          } else if(this.wordDetails.grammar_role.includes('补')) {
+            this.currentColor = 'var(--color-complement)'
+          } else if(this.wordDetails.grammar_role.includes('插')) {
+            this.currentColor = 'var(--color-parenthesis)'
+          } else if(this.wordDetails.grammar_role.includes('同位语')) {
+            this.currentColor = 'var(--color-appositive)'
+          } else {
+            // other未分类
+            this.currentColor = 'var(--color-other)'
           }
 
           // isFlipped控制翻面动画
@@ -95,8 +108,8 @@ export default {
   },
 
   watch: {
-    isKernelComplete(newVal) {
-      if(newVal && !this.isFlipped) {
+    kernelCount(newVal) {
+      if(newVal === 0 && !this.isFlipped) {
         if(this.wordDetails.grammar_role.includes('定')){
           this.currentColor = 'var(--color-attribute)'
         } else if(this.wordDetails.grammar_role.includes('状')){

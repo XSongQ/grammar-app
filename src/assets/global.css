@@ -46,6 +46,12 @@
 
   /* 从句颜色 */
   --color-inactive-clause: rgba(176, 190, 197, 0.5);
+
+  /* 同位语 */
+  --color-appositive: rgba(141, 110, 99, 0.75);
+  
+  /* 其他成分 */
+  --color-other: rgba(188, 170, 164, 0.5);
 }
 
 /* 错误动画 */

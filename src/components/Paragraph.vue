@@ -40,7 +40,7 @@
                                     v-bind:wordDetails="wordDetails" 
                                     v-bind:curSentenceNum="curSentenceNum" 
                                     v-on:check="checkSentence"  
-                                    v-bind:isKernelComplete="kernel_count[wordDetails.sentenceNum] === 0"
+                                    v-bind:kernelCount="kernel_count[wordDetails.sentenceNum]"
                                     v-bind:turn_card_processed="turn_card_processed"
                                 />
                             </v-col>
@@ -110,10 +110,11 @@ export default {
             // 初始化状态记录数组isCardNotFlipped和curSentenceNum
             // 确保每一层的components是数组
             // sentenceSeq系列用于初始化，sentenceNum系列用于后续更新
-            let sentenceSeq = 0
+            let sentenceSeq = 1
             const traverse = element => {
-                if(element.hasOwnProperty('sentence')) sentenceSeq++  // 对sentence的定义很重要：本句中包含完整的主谓宾/表（而不把components中的算在内）
+                if(element.hasOwnProperty('subSentence')) sentenceSeq++  // 对sentence的定义很重要：本句中包含完整的主谓宾/表（而不把components中的算在内）
                 let curSentenceSeq = sentenceSeq
+                let subordinatePartCount = 0     // 主谓（动）宾（表）之外的成分数量
                 element.components.forEach(e => {
                     if(e.hasOwnProperty('components')) {
                         if(e.grammar_role) {
@@ -154,11 +155,15 @@ export default {
                         }))
                         if(/[主谓动宾表]/.test(e.grammar_role)) {
                             this.kernel_count[curSentenceSeq] = this.kernel_count[curSentenceSeq] ? this.kernel_count[curSentenceSeq] + 1 : 1
-                        } 
+                        } else {
+                            subordinatePartCount++
+                        }
                         // 初始化状态记录数组isCardNotFlipped，共有constituent_num个没翻的同类WordCard
                         this.isCardNotFlipped.push(constituent_num)
                     }
                 })
+                // kernel_count为正时句子具备主干结构，值为主干成分的count，为负时不具备主干，绝对值为所有其他次要成分的count
+                if(!this.kernel_count[curSentenceSeq]) this.kernel_count[curSentenceSeq] = -subordinatePartCount
             }
             traverse(result)
             this.translation = result.translation
@@ -176,18 +181,25 @@ export default {
             // console.log(part_id, this.parts[part_id].text,this.isCardNotFlipped[part_id])
 
             // 判断一个部分是否全部点开
-            if(this.isCardNotFlipped[part_id] === 0 && /[主谓动宾表]/.test(grammar_role)) {
-                // 判断本句话kernel部分是否完成
-                this.kernel_count[this.curSentenceNum]--
-                if(this.kernel_count[this.curSentenceNum] === 0) {
-                    this.curSentenceNum++
-                    this.turn_card_processed = false
-                } else {
-                    this.turn_card_processed = true
-                }      
+            if(this.isCardNotFlipped[part_id] === 0) {
+                if(this.kernel_count[this.curSentenceNum] < 0) {
+                    this.kernel_count[this.curSentenceNum]++
+                } else if(/[主谓动宾表]/.test(grammar_role)) {
+                    this.kernel_count[this.curSentenceNum]--    
+                }
             } 
 
-            console.log(this.isCardNotFlipped, this.curSentenceNum, this.totalSentenceNum)
+
+            // 判断本句话kernel部分是否完成
+            if(this.kernel_count[this.curSentenceNum] === 0) {
+                this.curSentenceNum++
+                this.turn_card_processed = false
+            } else {
+                this.turn_card_processed = true
+            }  
+
+            console.log(this.curSentenceNum, this.totalSentenceNum)
+            console.log(this.kernel_count)
         }
     },
 

@@ -1,4 +1,5 @@
 node_moduels
-ds-try.js
-prompt.txt
 src/unitTest.js
+src/components/unitTest.vue
+src/components/unitTest2.vue
+
