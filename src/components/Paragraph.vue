@@ -68,7 +68,9 @@ function getRoleSymbol(grammar_role, position) {
         return '^'
     } else if (grammar_role.includes('同位语')) {
         return position === 'before' ? '{' : '}'
-    }
+    } 
+    else if (grammar_role.includes('宾语从句') || grammar_role.includes('表语从句')) return position === 'before' ? '«' : '»';
+    else if (grammar_role.includes('主语从句')) return '§';
     return ''
 }
 
@@ -111,13 +113,25 @@ export default {
             // 确保每一层的components是数组
             // sentenceSeq系列用于初始化，sentenceNum系列用于后续更新
             let sentenceSeq = 1
+            // 用于处理标点逻辑：
+            let real_component
+            let prepositive_punctuation
             const traverse = element => {
                 if(element.hasOwnProperty('subSentence')) sentenceSeq++  // 对sentence的定义很重要：本句中包含完整的主谓宾/表（而不把components中的算在内）
                 let curSentenceSeq = sentenceSeq
                 let subordinatePartCount = 0     // 主谓（动）宾（表）之外的成分数量
                 element.components.forEach(e => {
                     // 标点符号处理
-                    
+                    if(e.grammar_role.includes('标点')) {
+                        if(this.parts.length === 0) {
+                            // 其他前置标点逻辑
+                            prepositive_punctuation = e.text
+                        } else {
+                            this.parts[real_component].trailing_punctuation = e.text
+                        }
+                        console.log('标点位置' + real_component)
+                        return
+                    }
 
                     if(e.hasOwnProperty('components')) {
                         if(e.grammar_role) {
@@ -141,12 +155,18 @@ export default {
                         }
                     }
                     else {
+                        real_component = this.parts.length
+                        console.log(real_component)
+                        
                         let constituent_num = 0
                         this.parts.push({
                             ...e, 
                             sentenceNum: curSentenceSeq,
                             part_id: this.isCardNotFlipped.length
                         })
+                        if(prepositive_punctuation) this.parts[this.parts.length - 1].prepositive_punctuation = prepositive_punctuation
+                        prepositive_punctuation = undefined
+
                         this.words.push(...e.text.split(' ').map(constituent => {
                             constituent_num++
                             return {
@@ -171,6 +191,7 @@ export default {
             traverse(result)
             this.translation = result.translation
             this.totalSentenceNum = sentenceSeq
+            console.log(this.parts)
 
         } catch(error) {
             console.error('解析出错：', error)

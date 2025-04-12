@@ -16,69 +16,92 @@ export default {
             testValue: JSON.stringify(
                 {
   "wholeSentence": "One night, the gaoler decided to play a joke on his colleague to find out if, after so many performances, he had managed to learn the contents of the letter by heart.",
-  "translation": "一天晚上，狱卒决定和他的同事开个玩笑，想看看在演出这么多次之后，他是否已经能把信件内容背下来了。",
+  "translation": "一天晚上，狱卒决定跟同事开个玩笑，想看看经过这么多次表演后，他是否已经能把信的内容背下来了。",
   "components": [
     {
       "text": "One night",
-      "grammar_role": "时间状语",
-      "trailing_punctuation": ","
+      "grammar_role": "状语",
+      "translation": "一天晚上",
+      "target": "全句",
+      "more_info": "时间状语"
+    },
+    {
+      "text": ",",
+      "grammar_role": "标点符号",
+      "translation": "，"
     },
     {
       "text": "the gaoler",
-      "grammar_role": "主语"
+      "grammar_role": "主语",
+      "translation": "狱卒"
     },
     {
       "text": "decided",
-      "grammar_role": "谓语动词",
+      "grammar_role": "谓语",
+      "translation": "决定",
       "more_info": "过去式"
     },
     {
       "text": "to play a joke on his colleague",
-      "grammar_role": "宾语补足语",
-      "target": "decided"
+      "grammar_role": "宾语",
+      "translation": "跟同事开个玩笑",
+      "more_info": "不定式短语"
     },
     {
-      "subSentence": "to find out if, after so many performances, he had managed to learn the contents of the letter by heart",
-      "grammar_role": "目的状语",
+      "text": "to find out",
+      "grammar_role": "状语",
+      "translation": "想看看",
+      "target": "decided",
+      "more_info": "目的状语"
+    },
+    {
+      "subSentence": "if, after so many performances, he had managed to learn the contents of the letter by heart",
+      "grammar_role": "宾语从句",
       "components": [
         {
-          "text": "to find out",
-          "grammar_role": "不定式引导"
+          "text": "if",
+          "grammar_role": "连词",
+          "translation": "是否"
         },
         {
-          "subSentence": "if, after so many performances, he had managed to learn the contents of the letter by heart",
-          "grammar_role": "宾语从句",
-          "components": [
-            {
-              "text": "if",
-              "grammar_role": "连接词"
-            },
-            {
-              "text": "after so many performances",
-              "grammar_role": "时间状语",
-              "prepositive_punctuation": ",",
-              "trailing_punctuation": ","
-            },
-            {
-              "text": "he",
-              "grammar_role": "主语"
-            },
-            {
-              "text": "had managed",
-              "grammar_role": "谓语动词",
-              "more_info": "过去完成时"
-            },
-            {
-              "text": "to learn the contents of the letter by heart",
-              "grammar_role": "宾语",
-              "target": "had managed"
-            }
-          ]
+          "text": ",",
+          "grammar_role": "标点符号",
+          "translation": "，"
+        },
+        {
+          "text": "after so many performances",
+          "grammar_role": "状语",
+          "translation": "经过这么多次表演后",
+          "target": "had managed",
+          "more_info": "时间状语"
+        },
+        {
+          "text": "he",
+          "grammar_role": "主语",
+          "translation": "他"
+        },
+        {
+          "text": "had managed",
+          "grammar_role": "谓语",
+          "translation": "已经能",
+          "more_info": "过去完成时"
+        },
+        {
+          "text": "to learn the contents of the letter by heart",
+          "grammar_role": "宾语",
+          "translation": "把信的内容背下来",
+          "more_info": "不定式短语"
         }
       ]
+    },
+    {
+      "text": ".",
+      "grammar_role": "标点符号",
+      "translation": "。"
     }
   ]
 }
+
 
             )
         }
