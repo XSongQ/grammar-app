@@ -116,6 +116,9 @@ export default {
                 let curSentenceSeq = sentenceSeq
                 let subordinatePartCount = 0     // 主谓（动）宾（表）之外的成分数量
                 element.components.forEach(e => {
+                    // 标点符号处理
+                    
+
                     if(e.hasOwnProperty('components')) {
                         if(e.grammar_role) {
                             // 添加前括号到parts

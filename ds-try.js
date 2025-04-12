@@ -15,47 +15,53 @@ const system_prompt = `
 
 英文句子成分解析任务：用户输入一个英文句子。首先给出wholeSentence和translation属性，分别为完整的英文句子和中文翻译。之后句子成分拆解和分析都放在components属性当中，包括：
 
-以句子的语法成分为基本单位：components数组中的每个元素都是句子的一个语法成分，“普通成分”包含以下几个属性：
+以句子的语法成分为基本单位：components数组中的每个元素都是句子的一个语法成分，包括“普通成分”和“子句成分”。
+其中，“普通成分”包含以下几个属性：
 1. text：成分的英文原文，可以为单词或短语；
 2. grammar_role：成分的语法角色；
-3. target（可选）：如果是修饰成分，给出其修饰对象；
-4. more_info（可选）：成分的更多语法用法的介绍，比如成分的时态语态、单复数等，十个字之内；
-5. prepositive_punctuation / trailing_punctuation（可选）：如果该成分在原句中之前或之后有标点符号，则值为该标点符号。
+3. translation：本成分的中文翻译
+4. target（可选）：如果是修饰成分，给出其修饰对象；
+5. more_info（可选）：成分的更多语法用法的介绍，比如成分的时态语态、单复数等，十个字之内
 
-*除以上“普通成分”的格式，components数组的元素也可以是“子句成分”（subSentence）。子句成分必须包含至少一个kernel_sentence（具有最小的的主谓宾/主系表成分的结构），比如完整的从句或者并列句。非谓语动词短语这种不算。
-
+*以上是“普通成分”的格式。除“普通成分”，components数组的元素也可以是“子句成分”。“子句成分”必须包含至少一个kernel_sentence（即具有完整的主谓宾/主系表结构），并包含子句中其它所有附加成分。
+比如完整的从句或者并列句就属于“子句成分”，而非谓语动词短语这种不算。
 子句成分包含以下属性：
 1. subSentence：该子句的英文原文；
-2. grammar_role（可选）：如果是修饰主句的从句，则给出其语法角色；
+2. grammar_role：语法角色；
 2. components数组：该子句包含的语法成分，规则按照上述components数组的规则。
 
 总体来说，结构大致如下：
 {
   "wholeSentence": "This is original English Sentence.",
-  "translation": "这里为原句的中文翻译",
+  "translation": "这里为原句的中文翻译。",
   "components": [
     {
+      // 这是“普通成分”。“普通成分”不应包含components数组属性。
       "text": "This",
       "grammar_role": "主语",
       "translation": "这"
-      // “普通成分”不应包含components数组属性
     },
     {
       ...
     },
     { 
-      // 这是子句成分。如果其内部还有子子句成分，则也应作为本子句成分的子成分，放在下面的components数组中。
-      "subSentence": "（子句成分完整的英文原文，包括内部的子句成分和标点，如果有的话）",
-      "grammar_role": "（可选，如果为修饰主句的从句，则写明在主句中的成分）",
+      // 这是“子句成分”。如果其内部还有子“子句成分”，则也应作为本“子句成分”的子成分，放在下面的components数组中。
+      "subSentence": "（“子句成分”完整的英文原文，包括其内部的子“子句成分”和标点，如果有的话）",
+      "grammar_role": "“子句成分”的语法角色",
       "components": []
     },
     {
       ...
+    },
+    {
+      "text": ".",
+      "grammar_role": "标点符号",
+      "translation": "。"
     }
   ]
 }
 
-最后提醒：原句以及每个子句中所有成分均应该在其components数组中出现，成分前后的标点符号也不要落下。
+最后提醒：原句以及每个子句中所有成分均应该在其components数组中出现。
 `
 
 async function streamChat() {
