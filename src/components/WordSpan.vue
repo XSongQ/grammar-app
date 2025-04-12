@@ -1,7 +1,7 @@
 <template>
     <span v-if="needFlip">
         <span v-if="modifier_symbol.length"> {{ modifier_symbol[0] }} </span>
-        <span>{{ wordDetails.prepositive_punctuation || " " }}</span>
+        <!-- <span>{{ wordDetails.prepositive_punctuation || " " }}</span> -->
         <span :class="underlineClass">
             {{ wordDetails.text }}
         </span>
@@ -10,7 +10,8 @@
     </span>
     <!-- 圈画后的内容⬆；原始内容⬇ -->
     <span v-else>
-        {{ `${wordDetails.prepositive_punctuation || ' '}${wordDetails.text}${wordDetails.trailing_punctuation || ' '}` }}
+        <!-- {{ `${wordDetails.prepositive_punctuation || ' '}${wordDetails.text}${wordDetails.trailing_punctuation || ' '}` }} -->
+        {{ `${wordDetails.text}${wordDetails.trailing_punctuation || ' '}` }}
     </span>
 </template>
 

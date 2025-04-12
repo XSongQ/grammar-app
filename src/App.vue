@@ -74,7 +74,7 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'  
-import Paragraph from './components/unitTest2.vue'
+import Paragraph from './components/Paragraph.vue'
 import { prompt1, prompt2 } from './prompt'
 
 
@@ -186,7 +186,7 @@ async function requestSecondaryAnalysis() {
           "Authorization": `Bearer ${apiKey.value}`
         },
         body: JSON.stringify({
-          model: 'deepseek-chat',
+          model: "deepseek-reasoner", // 具体句子分析使用r1，v3准确率太低
           messages: prompt2(sentence),
           temperature: 0.6,
           max_tokens: 2000

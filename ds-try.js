@@ -54,6 +54,7 @@ const system_prompt = `
       ...
     },
     {
+      // 标点符号也算作“普通成分”，标点符号不包括引号。
       "text": ".",
       "grammar_role": "标点符号",
       "translation": "。"
