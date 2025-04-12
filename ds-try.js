@@ -3,7 +3,7 @@
 import { createInterface } from 'readline';
 
 const apiUrl = "https://api.deepseek.com/v1/chat/completions"
-const apiKey = "sk-42a20269625348a385c2c6d761650ad7"  // 调试用的 DeepSeek apiKey
+const apiKey = ""  // 调试用的 DeepSeek apiKey
 
 
 const system_prompt = `
