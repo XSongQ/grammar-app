@@ -1,6 +1,17 @@
 <template>
   <v-app>
-    <v-main style="max-width: 1200px; min-width: 100vh; margin: 0 auto;">  <!-- [! ++ 添加最大宽度和居中 ++] -->
+    <v-main style="max-width: 1200px; min-width: 100vh; margin: 0 auto; position: relative">  <!-- 添加 relative 定位 -->
+      <!-- 在顶部添加开关 -->
+      <div class="mode-switch-container">
+        <v-switch
+          v-model="usePreciseModel"
+          color="primary"
+          label="精准模式"
+          hide-details
+          class="ma-2"
+        ></v-switch>
+      </div>
+
       <v-dialog v-model="dialog" width="500px">
         <template v-slot:activator="{ props }">
           <v-btn color="primary" v-bind="props" class="ma-4">
@@ -22,7 +33,6 @@
             <v-btn color="primary" @click="primaryAnalysis">提交</v-btn>
           </v-card-actions>
         </v-card>
-        
       </v-dialog>
 
       <!-- <Paragraph
@@ -41,11 +51,12 @@
             v-for="(analysisResult, index) in secondaryResults"
             :key="index"
             :analysisResult="analysisResult"
+            :refreshNow="refreshNow && currentIndex === index"
             v-show="currentIndex === index"
           />
         </div>
         
-        <div class="switch-buttons">
+        <div class="footer">
           <v-btn 
             icon="mdi-chevron-left"
             color="primary"
@@ -54,6 +65,13 @@
             :disabled="currentIndex === 0"
             class="rounded-pill"
           ></v-btn>
+
+          <v-btn
+            color="primary"
+            @click="refreshCurrentParagraph"
+          >
+            重置操作
+          </v-btn>
           
           <v-btn 
             icon="mdi-chevron-right"
@@ -83,6 +101,7 @@ const userInput = ref('')
 // const apiResponse = ref(null)
 const loading = ref(false)
 const apiKey = ref('')
+const refreshNow = ref(false)
 
 // 在原有响应式变量后添加
 const secondaryResults = ref([])
@@ -106,6 +125,13 @@ function checkAPIKey() {
 onMounted(() => {
   checkAPIKey()
 })
+
+function refreshCurrentParagraph() {
+  refreshNow.value = true
+  setTimeout(() => {
+    refreshNow.value = false
+  }, 1000)
+}
 
 
 const primaryAnalysis = async () => {
@@ -167,6 +193,8 @@ const primaryAnalysis = async () => {
 
 // 异步请求分句
 // 修改空的 requestSecondaryAnalysis 函数
+const usePreciseModel = ref(false) // 默认不使用精准模式
+
 async function requestSecondaryAnalysis() {
   try {
     // 获取所有句子键并按顺序排序
@@ -186,7 +214,7 @@ async function requestSecondaryAnalysis() {
           "Authorization": `Bearer ${apiKey.value}`
         },
         body: JSON.stringify({
-          model: "deepseek-reasoner", // 具体句子分析使用r1，v3准确率太低
+          model: usePreciseModel.value ? "deepseek-reasoner" : "deepseek-chat", // 根据开关状态选择模型
           messages: prompt2(sentence),
           temperature: 0.6,
           max_tokens: 2000
@@ -213,9 +241,22 @@ async function requestSecondaryAnalysis() {
 
 <style scoped>
 
-.switch-buttons {
+.footer {
   display: flex;
   justify-content: space-around;
 }
 
+</style>
+
+<style scoped>
+/* 新增样式 */
+.mode-switch-container {
+  position: absolute;
+  /* top: 10px; */
+  right: 16px;
+  z-index: 1000;
+  /* background: rgba(255, 255, 255, 0.8); */
+  /* border-radius: 28px; */
+  /* box-shadow: 0 2px 4px rgba(0,0,0,0.1); */
+}
 </style>

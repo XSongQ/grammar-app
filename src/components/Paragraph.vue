@@ -1,6 +1,6 @@
 <template>
     <!-- 外层v-card负责背景色 -->
-    <v-card class="background-card">
+    <v-card class="background-card" :key="componentKey">
         <!-- 内层v-card负责内容布局 -->
         <v-card class="content-card">
             <v-card-text>
@@ -80,6 +80,9 @@ export default {
         // JSON格式传入
         analysisResult: {
             type: String,
+        },
+        refreshNow: {
+            type: Boolean,
         }
     },
 
@@ -95,7 +98,8 @@ export default {
             isCardNotFlipped: [],
             kernel_count: [],
 
-            turn_card_processed: false
+            turn_card_processed: false,
+            componentKey: 0
         }
     },
 
@@ -105,99 +109,120 @@ export default {
     },
 
     created() {
-        try{
-            // 将传入的JSON格式结果转换成对象
-            const result = JSON.parse(this.analysisResult) 
-            console.log(result)
-            
-            // 创建n个子组件WordCard和子组件WordSpan，前序遍历
-            // 初始化状态记录数组isCardNotFlipped和curSentenceNum
-            // 确保每一层的components是数组
-            // sentenceSeq系列用于初始化，sentenceNum系列用于后续更新
-            let sentenceSeq = 1
-            // 用于处理标点逻辑：
-            let real_component
-
-            const traverse = element => {
-                if(element.hasOwnProperty('subSentence')) sentenceSeq++  // 对sentence的定义很重要：本句中包含完整的主谓宾/表（而不把components中的算在内）
-                let curSentenceSeq = sentenceSeq
-                let subordinatePartCount = 0     // 主谓（动）宾（表）之外的成分数量
-                element.components.forEach(e => {
-                    // 标点符号处理
-                    if(e.grammar_role.includes('标点')) {
-                        if(e.text.includes('"') || e.text.includes("'")) return // 忽略引号
-                        if(real_component) {
-                            // 后置标点逻辑
-                            this.parts[real_component].trailing_punctuation = e.text
-                        } 
-                        // console.log('标点位置' + real_component)
-                        return
-                    }
-
-                    if(e.hasOwnProperty('components')) {
-                        if(e.grammar_role) {
-                            // 添加前括号到parts
-                            this.parts.push({
-                                isRoleMarker: true,
-                                symbol: getRoleSymbol(e.grammar_role, 'before'),
-                                sentenceNum: curSentenceSeq
-                            })
-                        }
-
-                        traverse(e)
-
-                        if(e.grammar_role) {
-                            // 添加后括号到parts
-                            this.parts.push({
-                                isRoleMarker: true,
-                                symbol: getRoleSymbol(e.grammar_role, 'after'),
-                                sentenceNum: curSentenceSeq
-                            })
-                        }
-                    }
-                    else {
-                        real_component = this.parts.length
-                        // console.log(real_component)
-                        
-                        let constituent_num = 0
-                        this.parts.push({
-                            ...e, 
-                            sentenceNum: curSentenceSeq,
-                            part_id: this.isCardNotFlipped.length
-                        })
-
-                        this.words.push(...e.text.split(' ').map(constituent => {
-                            constituent_num++
-                            return {
-                                ...e,
-                                constituent,
-                                sentenceNum: curSentenceSeq,
-                                part_id: this.isCardNotFlipped.length
-                            }
-                        }))
-                        if(/[主谓动宾表]/.test(e.grammar_role)) {
-                            this.kernel_count[curSentenceSeq] = this.kernel_count[curSentenceSeq] ? this.kernel_count[curSentenceSeq] + 1 : 1
-                        } else {
-                            subordinatePartCount++
-                        }
-                        // 初始化状态记录数组isCardNotFlipped，共有constituent_num个没翻的同类WordCard
-                        this.isCardNotFlipped.push(constituent_num)
-                    }
-                })
-                // kernel_count为正时句子具备主干结构，值为主干成分的count，为负时不具备主干，绝对值为所有其他次要成分的count
-                if(!this.kernel_count[curSentenceSeq]) this.kernel_count[curSentenceSeq] = -subordinatePartCount
-            }
-            traverse(result)
-            this.translation = result.translation
-            this.totalSentenceNum = sentenceSeq
-            // console.log(this.parts)
-
-        } catch(error) {
-            console.error('解析出错：', error)
-        }
+        this.refresh()
     },
 
     methods: {
+        refresh() {
+            this.$nextTick(() => {
+                // 初始化
+                this.words = []
+                this.parts = []
+                this.translation = ""
+                this.curSentenceNum = 1
+                this.totalSentenceNum = 0
+                this.isCardNotFlipped = []
+                this.kernel_count = []
+                this.turn_card_processed = false
+
+                // 强制WordCard组件重新渲染
+                this.componentKey += 1
+
+                try{
+                    // 将传入的JSON格式结果转换成对象
+                    const result = JSON.parse(this.analysisResult) 
+                    console.log(result)
+                    
+                    // 创建n个子组件WordCard和子组件WordSpan，前序遍历
+                    // 初始化状态记录数组isCardNotFlipped和curSentenceNum
+                    // 确保每一层的components是数组
+                    // sentenceSeq系列用于初始化，sentenceNum系列用于后续更新
+                    let sentenceSeq = 1
+                    // 用于处理标点逻辑：
+                    let real_component
+
+                    const traverse = element => {
+                        if(element.hasOwnProperty('subSentence')) sentenceSeq++  // 对sentence的定义很重要：本句中包含完整的主谓宾/表（而不把components中的算在内）
+                        let curSentenceSeq = sentenceSeq
+                        let subordinatePartCount = 0     // 主谓（动）宾（表）之外的成分数量
+                        element.components.forEach(e => {
+                            // 标点符号处理
+                            if(e.grammar_role.includes('标点')) {
+                                if(e.text.includes('"') || e.text.includes("'")) return // 忽略引号
+                                if(real_component) {
+                                    // 后置标点逻辑
+                                    this.parts[real_component].trailing_punctuation = e.text
+                                } 
+                                // console.log('标点位置' + real_component)
+                                return
+                            }
+
+                            if(e.hasOwnProperty('components')) {
+                                if(e.grammar_role) {
+                                    // 添加前括号到parts
+                                    this.parts.push({
+                                        isRoleMarker: true,
+                                        symbol: getRoleSymbol(e.grammar_role, 'before'),
+                                        sentenceNum: curSentenceSeq
+                                    })
+                                }
+
+                                traverse(e)
+
+                                if(e.grammar_role) {
+                                    // 添加后括号到parts
+                                    this.parts.push({
+                                        isRoleMarker: true,
+                                        symbol: getRoleSymbol(e.grammar_role, 'after'),
+                                        sentenceNum: curSentenceSeq
+                                    })
+                                }
+                            }
+                            else {
+                                real_component = this.parts.length
+                                // console.log(real_component)
+                                
+                                let constituent_num = 0
+                                this.parts.push({
+                                    ...e, 
+                                    sentenceNum: curSentenceSeq,
+                                    part_id: this.isCardNotFlipped.length
+                                })
+
+                                this.words.push(...e.text.split(' ').map(constituent => {
+                                    constituent_num++
+                                    return {
+                                        ...e,
+                                        constituent,
+                                        sentenceNum: curSentenceSeq,
+                                        part_id: this.isCardNotFlipped.length
+                                    }
+                                }))
+                                if(/[主谓动宾表]/.test(e.grammar_role)) {
+                                    this.kernel_count[curSentenceSeq] = this.kernel_count[curSentenceSeq] ? this.kernel_count[curSentenceSeq] + 1 : 1
+                                } else {
+                                    subordinatePartCount++
+                                }
+                                // 初始化状态记录数组isCardNotFlipped，共有constituent_num个没翻的同类WordCard
+                                this.isCardNotFlipped.push(constituent_num)
+                            }
+                        })
+                        // kernel_count为正时句子具备主干结构，值为主干成分的count，为负时不具备主干，绝对值为所有其他次要成分的count；kernel_count为0时代表没有标点以外的任何实际成分，需要跳过。
+                        if(!this.kernel_count[curSentenceSeq]) this.kernel_count[curSentenceSeq] = -subordinatePartCount
+                    }
+                    traverse(result)
+                    this.translation = result.translation
+                    this.totalSentenceNum = sentenceSeq
+                    // console.log(this.parts)
+                    while(this.kernel_count[this.curSentenceNum] === 0)this.curSentenceNum++
+                    console.log(this.kernel_count)
+
+                } catch(error) {
+                    console.error('解析出错：', error)
+                }
+            }) 
+        },
+
         checkSentence(part_id, grammar_role) {
             // this.isCardNotFlipped[part_id] === 0 时WordSpan会自动更新status
             this.isCardNotFlipped[part_id]--
@@ -216,6 +241,7 @@ export default {
             // 判断本句话kernel部分是否完成
             if(this.kernel_count[this.curSentenceNum] === 0) {
                 this.curSentenceNum++
+                while(this.kernel_count[this.curSentenceNum] === 0)this.curSentenceNum++
                 this.turn_card_processed = false
             } else {
                 this.turn_card_processed = true
@@ -226,6 +252,13 @@ export default {
         }
     },
 
+    watch: {
+        refreshNow(newVal) {
+            if(newVal) {
+                this.refresh()
+            }
+        }
+    }
 }
 </script>
 
